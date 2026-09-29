@@ -45,6 +45,9 @@ constexpr int NUM_KEYS = sizeof(KEY_PINS) / sizeof(KEY_PINS[0]);
 // For a chromatic keybox use {0,1,2,...,11}.
 constexpr int8_t KEY_SEMITONES[NUM_KEYS] = {0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19};
 
+// Outemu (Cherry-style) mechanical switches bounce up to ~5 ms
+constexpr uint32_t KEY_DEBOUNCE_MS = 7;
+
 // ---- Buttons / misc --------------------------------------------------
 constexpr int PIN_MODE_BTN = 47;   // short: PLAY<->AUTO, long: next song / new tonic
 constexpr int PIN_BATT_ADC = 4;    // battery through 100k/100k divider (optional)

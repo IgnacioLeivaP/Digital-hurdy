@@ -19,7 +19,7 @@ Una zanfona (hurdy-gurdy) digital:
 | TP4056 + 18650 | carga y batería |
 | MT3608 | sube 3.7 V → 5 V |
 
-**Falta comprar/conseguir:** 12 pulsadores (microswitch/teclas), parlante 3 W 4–8 Ω, interruptor, resistencias 4.7 kΩ ×3 (pull-ups del encoder) y 2×100 kΩ (medir batería), condensadores 100–470 µF para el riel de 5 V, protoboard/perfboard, una celda 18650 **protegida y de alta corriente**, y el acople mecánico (manivela → eje de 6 mm del encoder).
+**Falta comprar/conseguir:** parlante 3 W 4–8 Ω, jack 3.5 mm estéreo **con switch** (5 pines), jack 6.3 mm mono, potenciómetro 10 kΩ doble (volumen), interruptor, resistencias 4.7 kΩ ×3 (pull-ups del encoder) y 2×100 kΩ (medir batería), condensadores 100–470 µF para el riel de 5 V, protoboard/perfboard, una celda 18650 **protegida y de alta corriente**, y el acople mecánico (manivela → eje de 6 mm del encoder).
 
 ## Cableado
 Pines definidos en `src/config.h` (cámbialos ahí si quieres).
@@ -45,7 +45,21 @@ GND común para todo
 | SCK | **GND** (usa el PLL interno) |
 
 En el reverso del módulo (puentes de soldadura), la configuración típica es: FLT→L, DEMP→L, XSMT→H, FMT→L (I2S). Revisa el tuyo.
-`LOUT` → PAM8403 `L-in` (y `ROUT` → `R-in`, o une ambos). Salida de 2 Vrms es mucha para el PAM: usa un potenciómetro de 10 kΩ como volumen. El parlante va entre `L+` y `L-` del PAM (ninguno a GND).
+Las salidas `LOUT`/`ROUT` del PCM5102A se reparten como se muestra abajo.
+
+### Salidas de audio
+```
+                    ┌─► [1 kΩ] ─► JACK 6.3 mm (punta) ........ línea para amplificador (fija, sin pot)
+PCM5102A LOUT+ROUT ─┤   (L y R unidos con 2×1 kΩ → mono; manga a GND)
+   (2 Vrms)         │
+                    └─► POT 10 kΩ ─┬─► PAM8403 L-in y R-in ─► parlante interno
+                                   └─► 2×[47–100 Ω] ─► JACK 3.5 mm estéreo (audífonos)
+```
+- **Parlante interno con corte automático**: el jack 3.5 mm de 5 pines trae contactos normalmente cerrados que se abren al enchufar. Pasa **un solo cable del parlante** por ese contacto: `PAM8403 L+ → contacto NC del jack → parlante (+)`; `PAM8403 L- → parlante (-)` directo. Al enchufar audífonos el parlante se corta sin software. (Ninguno de los dos hilos del parlante va a GND.)
+- **Audífonos**: salen del PCM5102A a través del pot (por eso el pot regula ambos). El PCM5102A da buen nivel con audífonos de 32 Ω o más; con 16 Ω o de baja sensibilidad quedará justo — si hace falta más, se agrega un mini amplificador de audífonos (p. ej. TPA6132).
+- **Jack 6.3 mm**: nivel de línea fijo antes del pot, para entrar a un amplificador/mezclador/interfaz. Usa cable de instrumento (TS). Si el ampli es de guitarra, el nivel de 2 Vrms es alto: baja con un divisor 10 kΩ/1 kΩ si satura.
+- **Grabar en el DAW**: por el **puerto USB "USB"** del ESP32 llega **MIDI** (notas + CC11 de la manivela); el DAW pone su propio instrumento. Para grabar *este* sonido, usa la salida 6.3 mm a una interfaz de audio. (El ESP32-S3 también podría ser tarjeta de audio USB, pero no en modo MIDI + este build; queda como idea futura.)
+
 
 **MicroSD** — VCC→5V (tiene regulador y adaptador de nivel), GND, CS→GPIO 10, MOSI→11, SCK→12, MISO→13. Formato FAT32, carpeta `/songs`.
 
@@ -55,8 +69,8 @@ En el reverso del módulo (puentes de soldadura), la configuración típica es: 
 - Si fueran push-pull (salen 5 V): **no** las conectes directo; usa divisor 1.8 kΩ (serie) + 3.3 kΩ a GND por línea.
 - Prueba antes con un multímetro: con la salida en alto, ¿mide 5 V o queda "flotando"?
 
-**Teclas** — cada pulsador entre el GPIO y GND (pull-up interno): GPIO 8, 9, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41 (de la tecla más grave a la más aguda).
-**Botón de modo** — GPIO 47 a GND. **Batería (opcional)** — divisor 100k/100k desde OUT+ a GPIO 4.
+**Teclas (switches Outemu)** — cada switch entre el GPIO y GND (pull-up interno, sin diodos ni matriz); solo los 2 pines de contacto, los otros son del LED. Recomendado: **Brown (táctil) para las 12 teclas** — los Blue hacen *click* audible al presionar y se colaría en una grabación — y **Blue para el botón de modo**, donde el click sirve de confirmación. Antirrebote en `KEY_DEBOUNCE_MS`: GPIO 8, 9, 14, 15, 16, 17, 18, 21, 38, 39, 40, 41 (de la tecla más grave a la más aguda).
+**Botón de modo** (switch Blue) — GPIO 47 a GND. **Batería (opcional)** — divisor 100k/100k desde OUT+ a GPIO 4.
 
 Evitados a propósito: GPIO 26–37 (flash/PSRAM octal), 19/20 (USB), 0/3/45/46 (strapping).
 

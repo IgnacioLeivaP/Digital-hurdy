@@ -1,7 +1,5 @@
 #include "keys.h"
 
-static constexpr uint32_t DEBOUNCE_MS = 4;
-
 void Keys::begin() {
   for (int i = 0; i < NUM_KEYS; i++) pinMode(KEY_PINS[i], INPUT_PULLUP);
 }
@@ -10,7 +8,7 @@ void Keys::update(uint32_t nowMs) {
   for (int i = 0; i < NUM_KEYS; i++) {
     bool r = digitalRead(KEY_PINS[i]) == LOW;
     if (r != _raw[i]) { _raw[i] = r; _since[i] = nowMs; }
-    else if (r != _state[i] && nowMs - _since[i] >= DEBOUNCE_MS) _state[i] = r;
+    else if (r != _state[i] && nowMs - _since[i] >= KEY_DEBOUNCE_MS) _state[i] = r;
   }
   int top = -1, best = -1;
   for (int i = 0; i < NUM_KEYS; i++)
